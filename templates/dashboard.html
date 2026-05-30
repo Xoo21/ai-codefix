@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI CodeFix — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+
+  <!-- Monaco Editor loader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════╗ -->
+<!-- ║         SIDEBAR              ║ -->
+<!-- ╚══════════════════════════════╝ -->
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<aside id="sidebar" class="sidebar">
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+      </svg>
+    </div>
+    <span class="sidebar-logo-text">AI CodeFix</span>
+  </div>
+
+  <!-- User -->
+  {% if user %}
+  <div class="sidebar-user">
+    <div class="user-avatar">{{ user[0].upper() }}</div>
+    <div class="user-info">
+      <div class="user-name">{{ user }}</div>
+      <div class="user-status">
+        <span class="status-dot"></span>
+        <span class="status-label">Online</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Nav -->
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">เมนูหลัก</div>
+
+    <a href="/dashboard" class="nav-item active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+      </svg>
+      Dashboard
+    </a>
+
+    <a href="#editor-section" class="nav-item" onclick="document.getElementById('editor-section').scrollIntoView({behavior:'smooth'})">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+      </svg>
+      Code Review
+    </a>
+
+    <a href="/history/" class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      History
+    </a>
+
+    <div class="nav-section-label" style="margin-top:12px">เครื่องมือ</div>
+
+    <a href="#" class="nav-item" onclick="loadSampleCode(); return false;">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+        <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+      </svg>
+      โค้ดตัวอย่าง
+    </a>
+  </nav>
+
+  <!-- Logout -->
+  <div class="sidebar-bottom">
+    <a href="/auth/logout" class="nav-item">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      ออกจากระบบ
+    </a>
+  </div>
+</aside>
+
+<!-- ╔══════════════════════════════╗ -->
+<!-- ║        MAIN CONTENT          ║ -->
+<!-- ╚══════════════════════════════╝ -->
+<div class="main-content">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button id="menu-toggle" class="menu-toggle" onclick="toggleSidebar()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="breadcrumb">
+        <span class="breadcrumb-parent">AI CodeFix</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">Dashboard</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="ai-status-pill">
+        <span class="status-dot dot-pulse"></span>
+        Gemini AI Ready
+      </div>
+      {% if user %}
+      <div class="user-avatar" style="width:30px;height:30px;font-size:0.7rem">{{ user[0].upper() }}</div>
+      {% endif %}
+    </div>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+
+    <!-- ── Hero / Stats ── -->
+    <section class="animate-fade-in" style="margin-bottom:28px">
+      <div style="margin-bottom:20px">
+        <h1 style="font-size:1.5rem;margin-bottom:4px">
+          สวัสดี, <span class="gradient-text">{{ user or 'Developer' }}</span> 👋
+        </h1>
+        <p class="text-muted" style="font-size:0.82rem">วิเคราะห์โค้ดด้วย AI</p>
+      </div>
+
+      <!-- Stat cards -->
+      <div class="stats-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+        <div class="stat-card blue animate-fade-in delay-1">
+          <div class="flex items-center justify-between">
+            <div class="stat-icon blue">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <span class="badge badge-primary">ทั้งหมด</span>
+          </div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-label">การวิเคราะห์</div>
+        </div>
+
+        <div class="stat-card red animate-fade-in delay-2">
+          <div class="flex items-center justify-between">
+            <div class="stat-icon red">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <span class="badge badge-danger">พบปัญหา</span>
+          </div>
+          <div class="stat-value" id="stat-errors">—</div>
+          <div class="stat-label">มีข้อผิดพลาด</div>
+        </div>
+
+        <div class="stat-card green animate-fade-in delay-3">
+          <div class="flex items-center justify-between">
+            <div class="stat-icon green">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <span class="badge badge-success">ผ่าน</span>
+          </div>
+          <div class="stat-value" id="stat-clean">—</div>
+          <div class="stat-label">โค้ดถูกต้อง</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Editor Section ── -->
+    <section id="editor-section" class="animate-fade-in delay-2" style="margin-bottom:24px">
+      <div class="card" style="padding:0">
+
+        <!-- Card header -->
+        <div class="card-header" style="padding:16px 20px;margin-bottom:0">
+          <span class="card-title">
+            <div class="card-title-icon" style="background:rgba(59,130,246,0.1)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            Code Editor
+          </span>
+          <div class="flex gap-2 items-center">
+            <!-- Language selector -->
+            <div style="position:relative">
+              <button onclick="toggleLangDropdown()"
+                      style="display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:0.75rem;font-weight:600;color:var(--text-subtle);cursor:pointer;transition:all 0.15s">
+                <span id="current-lang-label">🐍 Python</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+
+              <!-- Dropdown -->
+              <div id="lang-dropdown" class="hidden"
+                   style="position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border-bright);border-radius:10px;padding:4px;min-width:160px;z-index:50;box-shadow:var(--shadow-md)">
+                <button data-lang="python"     onclick="selectLanguage('python')"     class="nav-item" style="width:100%;border-radius:6px;margin:0">🐍 Python</button>
+                <button data-lang="javascript" onclick="selectLanguage('javascript')" class="nav-item" style="width:100%;border-radius:6px;margin:0">⚡ JavaScript</button>
+                <button data-lang="java"       onclick="selectLanguage('java')"       class="nav-item" style="width:100%;border-radius:6px;margin:0">☕ Java</button>
+                <button data-lang="cpp"        onclick="selectLanguage('cpp')"        class="nav-item" style="width:100%;border-radius:6px;margin:0">⚙️ C++</button>
+                <button data-lang="html"       onclick="selectLanguage('html')"       class="nav-item" style="width:100%;border-radius:6px;margin:0">🌐 HTML</button>
+              </div>
+            </div>
+
+            <!-- Editor action buttons -->
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="loadSampleCode()" title="โหลดโค้ดตัวอย่าง">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+              </svg>
+            </button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="copyEditorCode()" title="คัดลอกโค้ด">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="clearEditor()" title="ล้างโค้ด">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Monaco Host -->
+        <div class="editor-container" style="border:none;border-radius:0">
+          <!-- macOS-style dots -->
+          <div class="editor-topbar">
+            <div class="editor-dots">
+              <span class="editor-dot red"></span>
+              <span class="editor-dot yellow"></span>
+              <span class="editor-dot green"></span>
+            </div>
+            <span class="editor-label code-font">ai-codefix — untitled</span>
+            <div style="width:52px"></div><!-- spacer -->
+          </div>
+
+          <div id="monaco-editor"></div>
+
+          <!-- Footer status bar -->
+          <div class="editor-footer">
+            <div class="flex gap-4">
+              <span id="editor-line-col">Ln 1, Col 1</span>
+              <span id="editor-total-lines">—</span>
+              <span id="editor-char-count">—</span>
+            </div>
+            <div class="flex gap-4">
+              <span>UTF-8</span>
+              <span>Spaces: 2</span>
+              <span style="color:var(--primary)">⌘↵ Analyze</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyze button area -->
+        <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <p style="font-size:0.75rem;color:var(--text-muted)">
+            AI จะวิเคราะห์ Syntax, Logic Error และแนะนำ Best Practice
+          </p>
+          <div class="flex gap-3 items-center">
+            <button id="btn-apply-fix" class="btn btn-success hidden" style="font-size:0.8rem">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              ใช้โค้ดที่แก้ไข
+            </button>
+            <button id="btn-analyze" class="btn-analyze" onclick="analyzeCode()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+              <span>ตรวจสอบโค้ด</span>
+              <span style="opacity:0.5;font-size:0.7rem;margin-left:2px">⌘↵</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Results Section ── -->
+    <section id="results-section" class="hidden">
+      <div style="margin-bottom:16px">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--text-bright)">ผลการวิเคราะห์</h3>
+      </div>
+
+      <!-- Status banner -->
+      <div id="result-status" style="margin-bottom:16px"></div>
+
+      <!-- 3-column results grid -->
+      <div class="dashboard-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+        <!-- Error Detection -->
+        <div class="result-section card" style="padding:0">
+          <div class="result-header" data-toggle="errors-body">
+            <div style="width:26px;height:26px;background:var(--danger-bg);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
+            <span class="result-title">ข้อผิดพลาดที่พบ</span>
+            <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div id="errors-body" class="result-body"></div>
+        </div>
+
+        <!-- AI Explanation -->
+        <div class="result-section card" style="padding:0">
+          <div class="result-header" data-toggle="explain-body">
+            <div style="width:26px;height:26px;background:rgba(59,130,246,0.1);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
+            <span class="result-title">คำอธิบาย AI</span>
+            <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+          <div id="explain-body" class="result-body">
+            <div id="result-explanation"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fixed code (full width) -->
+      <div class="result-section card" style="padding:0;margin-bottom:16px">
+        <div class="result-header" data-toggle="fixed-body">
+          <div style="width:26px;height:26px;background:var(--success-bg);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <span class="result-title">โค้ดที่แก้ไขแล้ว</span>
+          <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <div id="fixed-body" class="result-body">
+          <div id="result-fixed-code"></div>
+        </div>
+      </div>
+
+      <!-- Improvements (full width) -->
+      <div class="result-section card" style="padding:0">
+        <div class="result-header" data-toggle="improve-body">
+          <div style="width:26px;height:26px;background:rgba(139,92,246,0.1);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5">
+              <line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>
+            </svg>
+          </div>
+          <span class="result-title">คำแนะนำ</span>
+          <svg class="toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;flex-shrink:0">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+        <div id="improve-body" class="result-body">
+          <div id="result-improvements"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ╔══════════════════════════════╗ -->
+<!-- ║      LOADING OVERLAY         ║ -->
+<!-- ╚══════════════════════════════╝ -->
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner-orbit">
+    <div class="spinner-center"></div>
+  </div>
+  <div>
+    <p class="loading-text" id="loading-message">กำลังวิเคราะห์โค้ด...</p>
+    <p class="loading-subtext" style="text-align:center;margin-top:4px">Powered by อำนวย กฤชณะ ณัฐวุฒิ</p>
+  </div>
+</div>
+
+<!-- Wire up result panel toggles IDs -->
+<script>
+  // Map toggle targets to actual element IDs
+  document.querySelectorAll('[data-toggle]').forEach(el => {
+    const map = {
+      'errors-body':  'result-errors',
+      'explain-body': 'result-explanation',
+      'fixed-body':   'result-fixed-code',
+      'improve-body': 'result-improvements',
+    };
+    // Re-assign id for the body containers
+    const targetId = el.dataset.toggle;
+    const bodyEl = document.getElementById(targetId);
+    // The collapsible body is the next sibling
+  });
+</script>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AI CodeFix{% endblock %}</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonts: Syne (display) + JetBrains Mono (code) -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Syne', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            bg: '#020617',
+            surface: '#0d1424',
+            card: '#111827',
+            border: '#1e293b',
+            'border-bright': '#334155',
+            primary: '#3b82f6',
+            'primary-dark': '#2563eb',
+            accent: '#8b5cf6',
+            'accent-dark': '#7c3aed',
+            success: '#10b981',
+            danger: '#ef4444',
+            warning: '#f59e0b',
+            muted: '#64748b',
+            subtle: '#94a3b8',
+            bright: '#f8fafc',
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #020617;
+      color: #f8fafc;
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #0d1424; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+    /* Noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* Glow effects */
+    .glow-blue { box-shadow: 0 0 30px rgba(59, 130, 246, 0.15); }
+    .glow-purple { box-shadow: 0 0 30px rgba(139, 92, 246, 0.15); }
+
+    /* Sidebar */
+    #sidebar {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #sidebar.collapsed {
+      transform: translateX(-100%);
+    }
+
+    /* Nav link active state */
+    .nav-link.active {
+      background: linear-gradient(90deg, rgba(59,130,246,0.15), transparent);
+      border-left: 2px solid #3b82f6;
+      color: #f8fafc;
+    }
+
+    /* Button gradient */
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    }
+    .btn-primary:active { transform: translateY(0); }
+
+    /* Card hover */
+    .card-hover {
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    }
+    .card-hover:hover {
+      border-color: #334155;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+
+    /* Fade-in animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    .fade-in-delay-1 { animation: fadeIn 0.4s ease-out 0.1s both; }
+    .fade-in-delay-2 { animation: fadeIn 0.4s ease-out 0.2s both; }
+    .fade-in-delay-3 { animation: fadeIn 0.4s ease-out 0.3s both; }
+
+    /* Pulse for live indicator */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+    .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+    /* Loading spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 0.8s linear infinite; }
+
+    /* Code font */
+    .code-font { font-family: 'JetBrains Mono', monospace; }
+
+    /* Mobile overlay */
+    #sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 30;
+      backdrop-filter: blur(2px);
+    }
+    #sidebar-overlay.active { display: block; }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Badge */
+    .badge {
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="relative">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside id="sidebar" class="fixed left-0 top-0 h-full w-60 bg-surface border-r border-border z-40 flex flex-col">
+    <!-- Logo -->
+    <div class="px-5 py-5 border-b border-border">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg btn-primary flex items-center justify-center flex-shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <span class="font-bold text-base tracking-tight gradient-text">AI CodeFix</span>
+      </div>
+    </div>
+
+    <!-- User info -->
+    {% if user %}
+    <div class="px-4 py-3 border-b border-border">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-bold">
+          {{ user[0].upper() }}
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-bright truncate">{{ user }}</p>
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
+            <span class="text-xs text-muted">Online</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Navigation -->
+    <nav class="flex-1 px-3 py-4 space-y-1">
+      <p class="text-xs text-muted uppercase tracking-widest px-3 mb-2 font-medium">เมนูหลัก</p>
+
+      <a href="/dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-subtle hover:text-bright hover:bg-card transition-all text-sm font-medium {% if request.path == '/dashboard' %}active{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <a href="/dashboard#editor" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-subtle hover:text-bright hover:bg-card transition-all text-sm font-medium">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+        </svg>
+        Code Review
+      </a>
+
+      <a href="/history/" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-subtle hover:text-bright hover:bg-card transition-all text-sm font-medium {% if '/history' in request.path %}active{% endif %}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        History
+      </a>
+    </nav>
+
+    <!-- Bottom: Logout -->
+    <div class="px-3 py-4 border-t border-border">
+      <a href="/auth/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-subtle hover:text-danger hover:bg-red-900/10 transition-all text-sm font-medium">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        ออกจากระบบ
+      </a>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN WRAPPER ===== -->
+  <div class="ml-0 md:ml-60 min-h-screen flex flex-col relative z-10">
+
+    <!-- Topbar -->
+    <header class="sticky top-0 z-20 bg-bg/80 backdrop-blur-xl border-b border-border px-4 md:px-6 h-14 flex items-center justify-between">
+      <!-- Mobile menu toggle -->
+      <button onclick="toggleSidebar()" class="md:hidden p-2 text-muted hover:text-bright transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-sm">
+        <span class="text-muted">AI CodeFix</span>
+        <span class="text-border">/</span>
+        <span class="text-bright font-medium">{% block breadcrumb %}Dashboard{% endblock %}</span>
+      </div>
+
+      <!-- Right side -->
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-1.5 bg-success/10 border border-success/20 text-success px-3 py-1 rounded-full text-xs font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-success pulse-dot"></span>
+          Gemini AI Ready
+        </div>
+        {% if user %}
+        <a href="/auth/logout" class="text-muted hover:text-danger transition-colors p-1" title="ออกจากระบบ">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </a>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      sidebar.classList.toggle('collapsed');
+      overlay.classList.toggle('active');
+    }
+
+    // Mark active nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+      if (link.href === window.location.href) {
+        link.classList.add('active');
+      }
+    });
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
