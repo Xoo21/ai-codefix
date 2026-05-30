@@ -1,16 +1,19 @@
 """
 AI CodeFix - Main Flask Application
-รัน: python app.py
 """
 
 from flask import Flask, render_template, session, redirect, url_for
 from routes.auth import auth_bp
 from routes.api import api_bp
 from routes.history import history_bp
+from database import init_db  # ดึงคำสั่งสร้างตารางมาไว้ตรงนี้
 import os
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+
+# สั่งให้สร้างตารางฐานข้อมูลทำงานทันทีที่เปิดแอป (Render จะได้มองเห็น)
+init_db()
 
 # ลงทะเบียน Blueprints
 app.register_blueprint(auth_bp, url_prefix="/auth")
@@ -34,7 +37,4 @@ def dashboard():
 
 
 if __name__ == "__main__":
-    # สร้างตาราง Database อัตโนมัติ
-    from database import init_db
-    init_db()
     app.run(debug=True, port=5000)
