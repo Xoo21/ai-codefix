@@ -11,9 +11,9 @@ import hashlib
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "localhost"),
     "user": os.environ.get("DB_USER", "root"),
-    "password": os.environ.get("DB_PASSWORD", "MySQL@2026"), # แก้ไขแล้ว: รับรหัสผ่านจาก Environment
-    "database": os.environ.get("DB_NAME", "ai_codefix"),
-    "port": int(os.environ.get("DB_PORT", 3306)), # แก้ไขแล้ว: เพิ่มการรับค่าพอร์ต (ถ้าไม่มีให้ใช้ 3306)
+    "password": os.environ.get("DB_PASSWORD", "AVNS_agzkxXpN3tRLVDnVtVX"),
+    "database": os.environ.get("DB_NAME", "defaultdb"), # เปลี่ยนเป็น defaultdb แล้ว
+    "port": int(os.environ.get("DB_PORT", 16926)),      # ล็อคพอร์ต 16926 ของ Aiven ไว้เลย
     "charset": "utf8mb4",
     "collation": "utf8mb4_unicode_ci",
 }
